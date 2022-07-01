@@ -25,7 +25,7 @@ void* mMalloc(size_t size, char* filePath, int lineNumber)
   if (retval == NULL)
   {
     printf(FG_RED);
-    printf("malloc failed to allocate %d byte(s) at %s:%d\n", size, filePath, lineNumber);
+    printf("malloc failed to allocate %zx byte(s) at %s:%d\n", size, filePath, lineNumber);
     printf(RESET_COLOR);
     exit(-1);
   }
