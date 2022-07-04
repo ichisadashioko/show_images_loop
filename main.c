@@ -3,6 +3,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <tchar.h>
 
 #include "utils.h"
@@ -293,8 +294,119 @@ void initialize_application_state()
   app_state.should_toggle_fullscreen = 1;
 }
 
+struct WINDOWS_PATH_STRING_DATA
+{
+  TCHAR* buffer;
+  size_t character_size_in_bytes;
+  DWORD number_of_characters_with_null_terminator;
+};
+
+int find_test_images_directory_path(struct WINDOWS_PATH_STRING_DATA* path_string_data)
+{
+  // test-images
+  // 11 characters
+  // 12 characters with null terminator
+  TCHAR test_images_directory_name[] = {'t', 'e', 's', 't', '-', 'i', 'm', 'a', 'g', 'e', 's', 0};
+
+  /*
+  TCHAR* test_images_directory_name                           = TEXT("test-images");
+  DWORD test_images_number_of_characters_with_null_terminator = sizeof(test_images_directory_name);
+  printf("test_images_number_of_characters_with_null_terminator: %d\n", test_images_number_of_characters_with_null_terminator);
+  printf("sizeof(TCHAR): %d\n", sizeof(TCHAR));
+  printf("string length: %d\n", test_images_number_of_characters_with_null_terminator / sizeof(TCHAR));
+
+  printf("test_images_directory_name\n");
+  wprintf("%s\n", test_images_directory_name);
+  for (int i = 0; i < test_images_number_of_characters_with_null_terminator; i++)
+  {
+    printf("%d", (i % 10));
+  }
+  printf("\n");
+  */
+
+  DWORD dword_retval;
+
+  DWORD path_number_of_characters = 0;
+
+  dword_retval = GetCurrentDirectory(path_number_of_characters, NULL);
+
+  if (dword_retval == 0)
+  {
+    printf("GetCurrentDirectory failed at %s:%d\n", __FILE__, __LINE__);
+    mGetLastError();
+    return -1;
+  }
+
+  path_number_of_characters        = dword_retval;
+  size_t path_buffer_size_in_bytes = path_number_of_characters * sizeof(TCHAR);
+  TCHAR* path_buffer               = (TCHAR*)mMalloc(path_buffer_size_in_bytes, __FILE__, __LINE__);
+
+  dword_retval = GetCurrentDirectory(path_number_of_characters, path_buffer);
+
+  if (dword_retval == 0)
+  {
+    printf("GetCurrentDirectory failed at %s:%d\n", __FILE__, __LINE__);
+    mGetLastError();
+
+    free(path_buffer);
+    return -1;
+  }
+
+  if (dword_retval != (path_number_of_characters - 1))
+  {
+    printf("warning: the number of characters written is not equal to the reported number\n");
+    printf("written: %d, reported: %d\n", dword_retval, path_number_of_characters);
+    printf("%s:%d\n", __FILE__, __LINE__);
+  }
+
+  if (path_buffer[path_number_of_characters - 1] != 0)
+  {
+    printf("warning: the last character in the path buffer is not 0\n");
+    printf("%s:%d\n", __FILE__, __LINE__);
+  }
+
+  path_string_data->buffer                                    = path_buffer;
+  path_string_data->number_of_characters_with_null_terminator = path_number_of_characters;
+  path_string_data->character_size_in_bytes                   = sizeof(TCHAR);
+
+  return 0;
+}
+
+int testmain()
+{
+  struct WINDOWS_PATH_STRING_DATA path_string_data;
+  int result = find_test_images_directory_path(&path_string_data);
+
+  if (result != 0)
+  {
+    return result;
+  }
+
+  printf("number of characters: %d\n", path_string_data.number_of_characters_with_null_terminator);
+  printf("character size in bytes: %d\n", path_string_data.character_size_in_bytes);
+
+  if (path_string_data.buffer[path_string_data.number_of_characters_with_null_terminator - 1] != 0)
+  {
+    printf("warning: the last character in the path buffer is not 0\n");
+    printf("%s:%d\n", __FILE__, __LINE__);
+
+    path_string_data.buffer[path_string_data.number_of_characters_with_null_terminator - 1] = 0;
+  }
+
+  wprintf(L"%s\n", path_string_data.buffer);
+  free(path_string_data.buffer);
+
+  for (int i = 0; i < path_string_data.number_of_characters_with_null_terminator; i++)
+  {
+    printf("%d", (i % 10));
+  }
+  printf("\n");
+  return 0;
+}
+
 int main()
 {
+  return testmain();
   initialize_application_state();
   return wWinMain(GetModuleHandle(NULL), NULL, GetCommandLine(), SW_SHOWNORMAL);
 }
